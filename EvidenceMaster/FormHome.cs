@@ -11,7 +11,7 @@ namespace EvidenceMaster
         const string SYMBOL_TITLE = "+";
         const string SYMBOL_IMAGE = "-";
 
-        private List<Content> contents = new List<Content>();
+        private Contents _contents = new Contents();
 
         public FormHome()
         {
@@ -35,7 +35,7 @@ namespace EvidenceMaster
                     if (formInputContent.ShowDialog() == DialogResult.OK)
                     {
                         listViewContents.Items.Add(String.Format("{0} {1}", SYMBOL_IMAGE, formInputContent.ContentName));
-                        contents.Add(new Content(Content.Types.Image, formInputContent.ContentName, imageFilePath));
+                        _contents.AddImage(formInputContent.ContentName, imageFilePath);
                     }
                 }
                 else if (Clipboard.ContainsFileDropList())
@@ -56,7 +56,7 @@ namespace EvidenceMaster
                             using var formInputContent = new FormInputContent(Content.Types.Image, tempFilePath);
                             if (formInputContent.ShowDialog() == DialogResult.OK)
                             {
-                                contents.Add(new(Content.Types.Image, formInputContent.ContentName, tempFilePath));
+                                _contents.AddImage(formInputContent.ContentName, tempFilePath);
                                 listViewContents.Items.Add(String.Format("{0} {1}", SYMBOL_IMAGE, formInputContent.ContentName));
                             }
                         }
@@ -69,7 +69,7 @@ namespace EvidenceMaster
                 ListViewItem selectedItem = listViewContents.SelectedItems[0];
                 int selectedIndex = selectedItem.Index;
                 listViewContents.Items.Remove(selectedItem);
-                contents.RemoveAt(selectedIndex);
+                _contents.RemoveAt(selectedIndex);
             }
             // Ctrl+Up
             else if (e.Control && e.KeyCode == Keys.Up && listViewContents.SelectedItems.Count > 0)
@@ -84,9 +84,7 @@ namespace EvidenceMaster
                     listViewContents.Items.Remove(selectedItem);
                     listViewContents.Items.Insert(selectedIndex - 1, selectedItem);
 
-                    Content selectedContent = contents[selectedIndex];
-                    contents.RemoveAt(selectedIndex);
-                    contents.Insert(selectedIndex - 1, selectedContent);
+                    _contents.MoveUp(selectedIndex);
 
                     listViewContents.Items[selectedIndex - 1].Selected = true;
                 }
@@ -104,23 +102,26 @@ namespace EvidenceMaster
                     listViewContents.Items.Remove(selectedItem);
                     listViewContents.Items.Insert(selectedIndex + 1, selectedItem);
 
-                    Content selectedContent = contents[selectedIndex];
-                    contents.RemoveAt(selectedIndex);
-                    contents.Insert(selectedIndex + 1, selectedContent);
+                    _contents.MoveDown(selectedIndex);
 
                     listViewContents.Items[selectedIndex + 1].Selected = true;
                 }
             }
-            // R
-            else if (e.KeyCode == Keys.R)
+            // V
+            else if (e.KeyCode == Keys.V)
             {
                 if (listViewContents.SelectedItems.Count > 0)
                 {
                     ListViewItem selectedItem = listViewContents.SelectedItems[0];
                     int selectedIndex = selectedItem.Index;
-                    string newName = Interaction.InputBox("Inserisci il nuovo nome:", "Rinomina elemento", contents[selectedIndex].Name);
-                    selectedItem.Text = String.Format("{0} {1}", contents[selectedIndex].Type == Content.Types.Title ? SYMBOL_TITLE : SYMBOL_IMAGE, newName);
-                    contents[selectedIndex].Name = newName;
+
+                    using var formInputContent = new FormInputContent(_contents[selectedIndex].Type, _contents[selectedIndex].FilePath);
+                    formInputContent.setDefaultName(_contents[selectedIndex].Name);
+                    if (formInputContent.ShowDialog() == DialogResult.OK)
+                    {
+                        selectedItem.Text = String.Format("{0} {1}", _contents[selectedIndex].Type == Content.Types.Title ? SYMBOL_TITLE : SYMBOL_IMAGE, formInputContent.ContentName);
+                        _contents[selectedIndex].Name = formInputContent.ContentName;
+                    }
                 }
             }
             // T
@@ -134,12 +135,12 @@ namespace EvidenceMaster
                     if (selectedIndex >= 0)
                     {
                         listViewContents.Items.Insert(selectedIndex, String.Format("{0} {1}", SYMBOL_TITLE, formInputContent.ContentName));
-                        contents.Insert(selectedIndex, new Content(Content.Types.Title, formInputContent.ContentName));
+                        _contents.AddTitle(formInputContent.ContentName, selectedIndex);
                     }
                     else
                     {
                         listViewContents.Items.Add(String.Format("{0} {1}", SYMBOL_TITLE, formInputContent.ContentName));
-                        contents.Add(new Content(Content.Types.Title, formInputContent.ContentName));
+                        _contents.AddTitle(formInputContent.ContentName);
                     }
                 }
             }
@@ -191,7 +192,7 @@ namespace EvidenceMaster
                 using var formInputContent = new FormInputContent(Content.Types.Image, tempFilePath);
                 if (formInputContent.ShowDialog() == DialogResult.OK)
                 {
-                    contents.Add(new(Content.Types.Image, formInputContent.ContentName, tempFilePath));
+                    _contents.AddImage(formInputContent.ContentName, tempFilePath);
                     listViewContents.Items.Add(String.Format("{0} {1}", SYMBOL_IMAGE, formInputContent.ContentName));
                 }
             }
@@ -201,99 +202,21 @@ namespace EvidenceMaster
         {
             bool isShiftPressed = (Control.ModifierKeys & Keys.Shift) == Keys.Shift;
 
-            // Crea un nuovo documento Word
-            //string filePath = "output.docx";
             string outputPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), String.Format("{0}_{1:yyyyMMddHHmmss}.docx", textBoxReference.Text, DateTime.Now));
-            var doc = DocX.Create(outputPath);
-
-            // Imposta il contenuto delle pagine
-            var contentQuery = contents.OrderBy(content => contents.IndexOf(content));
-            int sectionImageCount = 0;
-            bool firstElement = true;
-            foreach (var content in contentQuery)
-            {
-                // Aggiungi un titolo
-                if (content.Type == Content.Types.Title)
-                {
-                    if (!firstElement)
-                    {
-                        doc.InsertSectionPageBreak();
-                        sectionImageCount = 0;
-                    }
-                    doc.InsertParagraph(content.Name).Heading(HeadingType.Heading1).FontSize(24).Alignment = Alignment.center;
-                    doc.InsertParagraph();
-                }
-                // Aggiungi un'immagine
-                else if (content.Type == Content.Types.Image && !string.IsNullOrEmpty(content.FilePath))
-                {
-                    if (sectionImageCount == 2)
-                    {
-                        doc.InsertSectionPageBreak();
-                        sectionImageCount = 0;
-                    }
-                    sectionImageCount++;
-
-                    doc.InsertParagraph(content.Name).Bold().Alignment = Alignment.left;
-                    var image = doc.AddImage(content.FilePath);
-                    var picture = image.CreatePicture();
-
-                    // Imposta la larghezza e l'altezza massima desiderate per l'immagine (ad esempio, 400 pixel per entrambe)
-                    int maxWidth = 400;
-                    int maxHeight = 400;
-                    double widthScaleFactor = (double)maxWidth / picture.Width;
-                    double heightScaleFactor = (double)maxHeight / picture.Height;
-                    double scaleFactor = Math.Min(widthScaleFactor, heightScaleFactor);
-                    if (scaleFactor < 1)
-                    {
-                        picture.Width = (int)(picture.Width * scaleFactor);
-                        picture.Height = (int)(picture.Height * scaleFactor);
-                    }
-
-                    var paragraph = doc.InsertParagraph();
-                    paragraph.Alignment = Alignment.center;
-                    paragraph.AppendPicture(picture);
-                    doc.InsertParagraph();
-                }
-                firstElement = false;
-            }
-
-            // Aggiungi gli header e i footer
-            doc.AddHeaders();
-            doc.AddFooters();
-
-            // Indicate that the first page will have independent Headers/Footers
-            doc.DifferentFirstPage = false;
-            doc.DifferentOddAndEvenPages = false;
-
-            // Insert a Paragraph in the Headers/Footers for the first page
-            doc.Headers.Odd.InsertParagraph(String.Format("{0}\t\t\t{1}\t\t\t{2}", comboBoxCI.Text, textBoxReference.Text, Environment.UserName));
-            //doc.Footers.Odd.InsertParagraph(String.Format("{0}", Environment.UserName));
-
-
             if (isShiftPressed)
             {
-                // Crea un'istanza del SaveFileDialog
                 SaveFileDialog saveFileDialog = new SaveFileDialog();
-
-                // Imposta il filtro dei tipi di file
                 saveFileDialog.Filter = "Documento Word (*.docx)|*.docx";
-
-                // Imposta il titolo del dialogo
                 saveFileDialog.Title = "Salva il file";
-
-                // Mostra la finestra di dialogo e verifica se l'utente ha premuto OK
                 if (saveFileDialog.ShowDialog() == DialogResult.OK)
                 {
-                    // Ottieni il percorso del file selezionato dall'utente
                     outputPath = saveFileDialog.FileName;
                 }
             }
 
-            // Salva il documento Word
-            doc.SaveAs(outputPath);
+            string header = String.Format("{0}\t\t\t{1}\t\t\t{2}", comboBoxCI.Text, textBoxReference.Text, Environment.UserName);
 
-            // Apri il documento Word
-            if (File.Exists(outputPath))
+            if (_contents.CreateDocx(outputPath, header))
             {
                 MessageBox.Show(String.Format("File salvato al percorso: {0}", outputPath));
             }

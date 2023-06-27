@@ -7,7 +7,7 @@ namespace EvidenceMaster
         private const int MaxImageHeight = 810;
 
         private readonly Content.Types ContentType;
-        public string? ContentName { get; set; }
+        public string ContentName { get; set; }
         private string? ImageFilePath;
 
 
@@ -62,6 +62,13 @@ namespace EvidenceMaster
             }
 
             // Imposta il focus sul textBoxName all'apertura del form
+            textBoxName.Focus();
+        }
+
+        public void setDefaultName(string name)
+        {
+            textBoxName.Text = name;
+            textBoxName.SelectAll();
             textBoxName.Focus();
         }
 
