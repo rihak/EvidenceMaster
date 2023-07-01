@@ -1,4 +1,5 @@
-﻿using Xceed.Document.NET;
+﻿using Microsoft.VisualBasic;
+using Xceed.Document.NET;
 using Xceed.Words.NET;
 
 namespace EvidenceMaster
@@ -10,6 +11,12 @@ namespace EvidenceMaster
             Image,
             Title
         }
+
+        public static Dictionary<Content.Types, string> TypeSymbols = new Dictionary<Content.Types, string>()
+        {
+            {Content.Types.Image, "-"},
+            {Content.Types.Title, "+"},
+        };
 
         private Types _type;
         private string _name;
@@ -58,6 +65,15 @@ namespace EvidenceMaster
         }
 
 
+        public List<string> ListDisplay()
+        {
+            List<string> listDisplay = new List<string>();
+            foreach (var content in _list)
+            {
+                listDisplay.Add($"{Content.TypeSymbols[content.Type]} {content.Name}");
+            }
+            return listDisplay;
+        }
 
         public void AddImage(string name, string filePath, int? index = null)
         {
@@ -90,21 +106,31 @@ namespace EvidenceMaster
             return result;
         }
 
-        public void Move(int index, int offset)
+        public bool Move(int index, int offset)
         {
+            if ( (index < 0) || (index >= _list.Count) || (index + offset < 0) || (index + offset >= _list.Count) )
+            {
+                return false;
+            }
             Content content = _list[index];
             _list.RemoveAt(index);
             _list.Insert(index + offset, content);
+            return true;
         }
 
-        public void MoveUp(int index)
+        public bool MoveUp(int index)
         {
-            Move(index, -1);
+            return Move(index, -1);
         }
 
-        public void MoveDown(int index)
+        public bool MoveDown(int index)
         {
-            Move(index, +1);
+            return Move(index, +1);
+        }
+
+        public void Clear()
+        {
+            _list.Clear();
         }
 
         public bool CreateDocx(string filePath, string? header = null, string? footer = null)
