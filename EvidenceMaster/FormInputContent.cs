@@ -29,6 +29,7 @@ namespace EvidenceMaster
                 if (string.IsNullOrEmpty(this.ImageFilePath))
                 {
                     MessageBox.Show("Percorso dell'immagine non trovato");
+                    ContentName = "";
                     this.Close();
                     return;
                 }
@@ -53,16 +54,14 @@ namespace EvidenceMaster
                     graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
                     graphics.DrawImage(image, 0, 0, newWidth, newHeight);
                 }
-
-                // Rilascia l'immagine originale
                 image.Dispose();
 
                 pictureBoxPreview.Image = scaledImage;
                 pictureBoxPreview.Enabled = true;
             }
 
-            // Imposta il focus sul textBoxName all'apertura del form
             textBoxName.Focus();
+            ContentName = textBoxName.Text;
         }
 
         public void setDefaultName(string name)

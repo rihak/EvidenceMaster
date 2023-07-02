@@ -250,7 +250,7 @@ namespace EvidenceMaster
 
         private void linkLabelHelp_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            string testoPopup = @"EvidenceMaster Help
+            string testoPopup = @"EvidenceMaster v0.1.1
                 
 Interfaccia:
     - Menu Configuration Item
@@ -275,7 +275,9 @@ Reset:
 Go:
     - CLICK - Crea il Documento DOCX sul Desktop secondo i Contenuti
     - SHIFT+CLICK - Crea il Documento DOCX sulla posizione scelta secondo i Contenuti
-";
+
+
+Riccardo Pietrini";
 
             MessageBox.Show(testoPopup, "Help", MessageBoxButtons.OK);
         }
