@@ -203,28 +203,44 @@ namespace EvidenceMaster
         private void buttonGo_Click(object sender, EventArgs e)
         {
             bool isShiftPressed = (Control.ModifierKeys & Keys.Shift) == Keys.Shift;
+            bool isCtrlPressed = (Control.ModifierKeys & Keys.Control) == Keys.Control;
 
-            string outputPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), String.Format("{0}_{1:yyyyMMddHHmmss}.docx", textBoxReference.Text, DateTime.Now));
+            if ( comboBoxCI.Text == "" || textBoxReference.Text == "" || listViewContents.Items.Count == 0 )
+            {
+                MessageBox.Show("Impossibile proseguire. I campi CI, Reference e Lista dei contenuti non possono essere vuoti.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+            string outputPath = Path.Combine(desktopPath, String.Format("{0}_{1:yyyyMMddHHmmss}.{2}", textBoxReference.Text, DateTime.Now, isCtrlPressed ? "pdf" : "docx"));
+
             if (isShiftPressed)
             {
                 SaveFileDialog saveFileDialog = new SaveFileDialog();
-                saveFileDialog.Filter = "Documento Word (*.docx)|*.docx";
+                saveFileDialog.InitialDirectory = desktopPath;
+                saveFileDialog.FileName = textBoxReference.Text;
+                saveFileDialog.Filter = isCtrlPressed ? "Documento PDF (*.pdf)|*.pdf" : "Documento Word (*.docx)|*.docx";
                 saveFileDialog.Title = "Salva il file";
                 if (saveFileDialog.ShowDialog() == DialogResult.OK)
                 {
                     outputPath = saveFileDialog.FileName;
                 }
+                else
+                {
+                    return;
+                }
             }
 
-            string header = String.Format("{0}\t\t{1}\t\t{2}", comboBoxCI.Text, textBoxReference.Text, Environment.UserName);
+            string header = String.Format("{0}\t\t{1}", comboBoxCI.Text, textBoxReference.Text);
+            string footer = "Footer Test";
 
-            if (_contents.CreateDocx(outputPath, header))
+            if (_contents.CreateDocx(outputPath, isCtrlPressed, header, footer))
             {
-                MessageBox.Show(String.Format("File salvato al percorso: {0}", outputPath));
+                MessageBox.Show(String.Format("File salvato al percorso: {0}", outputPath), "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             else
             {
-                MessageBox.Show("Si è verificato un errore durante la creazione del file.");
+                MessageBox.Show("Si è verificato un errore durante la creazione del file.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -248,10 +264,11 @@ namespace EvidenceMaster
             listViewContents_Update();
         }
 
-        private void linkLabelHelp_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        private void buttonHelp_Click(object sender, EventArgs e)
         {
-            string testoPopup = @"EvidenceMaster v0.1.1
-                
+            string testoPopup = $@"{this.Text}
+Riccardo Pietrini
+
 Interfaccia:
     - Menu Configuration Item
     - Campo Riferimenti
@@ -275,11 +292,10 @@ Reset:
 Go:
     - CLICK - Crea il Documento DOCX sul Desktop secondo i Contenuti
     - SHIFT+CLICK - Crea il Documento DOCX sulla posizione scelta secondo i Contenuti
+    - CTRL+CLICK - Crea il Documento PDF sul Desktop secondo i Contenuti
+    - CTRL+SHIFT+CLICK - Crea il documento PDF sulla posizione scelta secondo i Contenuti";
 
-
-Riccardo Pietrini";
-
-            MessageBox.Show(testoPopup, "Help", MessageBoxButtons.OK);
+            MessageBox.Show(testoPopup, "Help", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using Microsoft.VisualBasic;
+﻿using Microsoft.Office.Interop.Word;
 using Xceed.Document.NET;
 using Xceed.Words.NET;
 
@@ -197,6 +197,105 @@ namespace EvidenceMaster
             document.SaveAs(filePath);
 
             return File.Exists(filePath);
+        }
+
+        public bool CreateDocx(string filePath, bool saveAsPdf, string? header = null, string? footer = null)
+        {
+            const int titlesFontSize = 24;
+            const int paragrahpsFontSize = 14;
+            const int horizontalImagesMaxHeight = 350;
+            const int verticalImgesMaxHeight = 300;
+            const int imagesBeforeBreak = 2;
+
+            Microsoft.Office.Interop.Word.Application wordApp;
+            Microsoft.Office.Interop.Word.Document wordDoc;
+            try
+            {
+                wordApp = new Microsoft.Office.Interop.Word.Application();
+                wordDoc = wordApp.Documents.Add();
+
+                PageSetup pageSetup = wordDoc.PageSetup;
+                pageSetup.TopMargin = wordApp.CentimetersToPoints(2);
+                pageSetup.BottomMargin = wordApp.CentimetersToPoints(2);
+                pageSetup.LeftMargin = wordApp.CentimetersToPoints(2);
+                pageSetup.RightMargin = wordApp.CentimetersToPoints(2);
+
+                HeaderFooter headerFooter = wordDoc.Sections[1].Headers[WdHeaderFooterIndex.wdHeaderFooterPrimary];
+                Microsoft.Office.Interop.Word.Paragraph headerParagraph = headerFooter.Range.Paragraphs.Add();
+                headerParagraph.Range.Text = header;
+                headerParagraph.Format.Alignment = WdParagraphAlignment.wdAlignParagraphCenter;
+
+                headerFooter = wordDoc.Sections[1].Footers[WdHeaderFooterIndex.wdHeaderFooterPrimary];
+                headerFooter.PageNumbers.Add(0);
+
+                int sectionImageCount = 0;
+                bool firstElement = true;
+
+                foreach (var content in _list.OrderBy(content => _list.IndexOf(content)))
+                {
+                    if (content.Type == Content.Types.Title)
+                    {
+                        if (!firstElement)
+                        {
+                            wordDoc.Words.Last.InsertBreak(WdBreakType.wdPageBreak);
+                            sectionImageCount = 0;
+                        }
+
+                        Microsoft.Office.Interop.Word.Paragraph titleParagraph = wordDoc.Paragraphs.Add();
+                        titleParagraph.Range.Text = content.Name;
+                        titleParagraph.Range.Font.Size = titlesFontSize;
+                        titleParagraph.Range.ParagraphFormat.Alignment = WdParagraphAlignment.wdAlignParagraphCenter;
+                        titleParagraph.Range.InsertParagraphAfter();
+                    }
+                    else if ((content.Type == Content.Types.Image) && (!string.IsNullOrEmpty(content.FilePath)))
+                    {
+                        if (sectionImageCount == imagesBeforeBreak)
+                        {
+                            wordDoc.Words.Last.InsertBreak(WdBreakType.wdPageBreak);
+                            sectionImageCount = 0;
+                        }
+                        sectionImageCount++;
+
+                        Microsoft.Office.Interop.Word.Paragraph imageParagraph = wordDoc.Paragraphs.Add();
+                        imageParagraph.Range.Text = content.Name;
+                        imageParagraph.Range.Font.Bold = 1;
+                        imageParagraph.Range.Font.Size = paragrahpsFontSize;
+                        imageParagraph.Range.ParagraphFormat.Alignment = WdParagraphAlignment.wdAlignParagraphLeft;
+                        imageParagraph.Range.InsertParagraphAfter();
+
+                        InlineShape inlineShape = imageParagraph.Range.InlineShapes.AddPicture(content.FilePath);
+
+                        float aspectRatio = (float)inlineShape.Width / inlineShape.Height;
+                        float imagesMaxHeight = aspectRatio > 1 ? horizontalImagesMaxHeight : verticalImgesMaxHeight;
+                        float newHeight = imagesMaxHeight;
+                        float newWidth = imagesMaxHeight * aspectRatio;
+
+                        if (newWidth > pageSetup.PageWidth - (pageSetup.LeftMargin + pageSetup.RightMargin))
+                        {
+                            newWidth = pageSetup.PageWidth - (pageSetup.LeftMargin + pageSetup.RightMargin);
+                            newHeight = newWidth / aspectRatio;
+                        }
+
+                        inlineShape.Width = newWidth;
+                        inlineShape.Height = newHeight;
+
+                        imageParagraph.Range.InsertParagraphAfter();
+                    }
+                    firstElement = false;
+                }
+
+                wordDoc.SaveAs2(filePath, saveAsPdf ? WdSaveFormat.wdFormatPDF : WdSaveFormat.wdFormatDocumentDefault);
+
+                wordDoc?.Close(WdSaveOptions.wdDoNotSaveChanges);
+                wordApp?.Quit();
+
+                return File.Exists(filePath);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Si è verificato un errore durante la creazione del documento Word: " + ex.Message);
+                return false;
+            }
         }
     }
 }

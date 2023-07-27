@@ -3,9 +3,6 @@ namespace EvidenceMaster
 {
     public partial class FormInputContent : Form
     {
-        private const int MaxImageWidth = 1440;
-        private const int MaxImageHeight = 810;
-
         private readonly Content.Types ContentType;
         public string ContentName { get; set; }
         private string? ImageFilePath;
