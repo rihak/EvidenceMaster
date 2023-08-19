@@ -1,6 +1,4 @@
 ﻿using Microsoft.Office.Interop.Word;
-using Xceed.Document.NET;
-using Xceed.Words.NET;
 
 namespace EvidenceMaster
 {
