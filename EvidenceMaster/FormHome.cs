@@ -303,6 +303,7 @@ Interfaccia:
     - Menu Configuration Item
     - Campo Riferimenti
     - Lista Contenuti
+    - Barra di Progresso
     - Pulsante Reset
     - Pulsante Go
 
@@ -321,9 +322,9 @@ Reset:
 
 Go:
     - CLICK - Crea il Documento DOCX sul Desktop secondo i Contenuti
-    - SHIFT+CLICK - Crea il Documento DOCX sulla posizione scelta secondo i Contenuti
+    - SHIFT+CLICK - Crea il Documento DOCX sulla posizione scelta (che diventa la nuova posizione di default) secondo i Contenuti
     - CTRL+CLICK - Crea il Documento PDF sul Desktop secondo i Contenuti
-    - CTRL+SHIFT+CLICK - Crea il documento PDF sulla posizione scelta secondo i Contenuti";
+    - CTRL+SHIFT+CLICK - Crea il documento PDF sulla posizione scelta (che diventa la nuova posizione di default) secondo i Contenuti";
 
             MessageBox.Show(testoPopup, "Help", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
