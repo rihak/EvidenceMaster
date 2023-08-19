@@ -5,14 +5,15 @@ namespace EvidenceMaster
 {
     public partial class FormHome : Form
     {
-        private Contents _contents = new Contents();
-
-        //private AutoCompleteStringCollection autoCompleteCollection;
+        private Contents _contents;
+        private string _defaultOutputDirectory;
 
         public FormHome()
         {
             InitializeComponent();
-            this.FormBorderStyle = FormBorderStyle.FixedSingle;
+
+            // Impedisci di ridimensionare la finestra
+            //this.FormBorderStyle = FormBorderStyle.FixedSingle;
 
             string ciFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ci.txt");
             if (File.Exists(ciFilePath))
@@ -22,21 +23,33 @@ namespace EvidenceMaster
                 comboBoxCI.Items.AddRange(ci);
             }
 
-            //autoCompleteCollection = new AutoCompleteStringCollection();
-            //comboBoxCI.AutoCompleteCustomSource = autoCompleteCollection;
-            //autoCompleteCollection.AddRange(comboBoxCI.Items.Cast<string>().ToArray());
+            string savedOutputDirectory = Properties.Settings.Default.savedOutputDirectory;
+            _defaultOutputDirectory = String.IsNullOrEmpty(savedOutputDirectory) ? Environment.GetFolderPath(Environment.SpecialFolder.Desktop) : savedOutputDirectory;
+
+            comboBoxCI.Text = Properties.Settings.Default.lastCI;
+            textBoxReference.Text = Properties.Settings.Default.lastReference;
+            string serializedContents = Properties.Settings.Default.lastContents;
+            if (!String.IsNullOrEmpty(serializedContents))
+            {
+                _contents = new Contents(serializedContents);
+                listViewContents_Update();
+            }
+            else
+            {
+                _contents = new Contents();
+            }
+
+            _contents.ProgressUpdated += onProgressUpdated;
 
         }
 
-        //private void comboBoxCI_TextChanged(object sender, EventArgs e)
-        //{
-        //    var suggestions = comboBoxCI.Items.Cast<string>()
-        //        .Where(item => item.ToLower().Contains(comboBoxCI.Text.ToLower()))
-        //        .ToArray();
-
-        //    comboBoxCI.AutoCompleteCustomSource.Clear();
-        //    comboBoxCI.AutoCompleteCustomSource.AddRange(suggestions);
-        //}
+        private void FormHome_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            Properties.Settings.Default.lastCI = this.comboBoxCI.Text;
+            Properties.Settings.Default.lastReference = this.textBoxReference.Text;
+            Properties.Settings.Default.lastContents = _contents.Serialize();
+            Properties.Settings.Default.Save();
+        }
 
         private void listViewContents_Update()
         {
@@ -164,7 +177,6 @@ namespace EvidenceMaster
             {
                 e.Effect = DragDropEffects.Copy;
             }
-
         }
 
         private void listViewContents_DragDrop(object sender, DragEventArgs e)
@@ -200,30 +212,48 @@ namespace EvidenceMaster
             }
         }
 
-        private void buttonGo_Click(object sender, EventArgs e)
+        private void onProgressUpdated(object? sender, int progressPercentage)
+        {
+            if (InvokeRequired)
+            {
+                Invoke(new Action(() => progressBarCreation.Value = progressPercentage));
+            }
+            else
+            {
+                progressBarCreation.Value = progressPercentage;
+            }
+        }
+
+        private async void buttonGo_Click(object sender, EventArgs e)
         {
             bool isShiftPressed = (Control.ModifierKeys & Keys.Shift) == Keys.Shift;
             bool isCtrlPressed = (Control.ModifierKeys & Keys.Control) == Keys.Control;
 
-            if ( comboBoxCI.Text == "" || textBoxReference.Text == "" || listViewContents.Items.Count == 0 )
+            if (comboBoxCI.Text == "" || textBoxReference.Text == "" || listViewContents.Items.Count == 0)
             {
                 MessageBox.Show("Impossibile proseguire. I campi CI, Reference e Lista dei contenuti non possono essere vuoti.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-            string outputPath = Path.Combine(desktopPath, String.Format("{0}_{1:yyyyMMddHHmmss}.{2}", textBoxReference.Text, DateTime.Now, isCtrlPressed ? "pdf" : "docx"));
+            string outputPath = Path.Combine(_defaultOutputDirectory, String.Format("{0}_{1:yyyyMMddHHmmss}.{2}", textBoxReference.Text, DateTime.Now, isCtrlPressed ? "pdf" : "docx"));
 
             if (isShiftPressed)
             {
                 SaveFileDialog saveFileDialog = new SaveFileDialog();
-                saveFileDialog.InitialDirectory = desktopPath;
+                saveFileDialog.InitialDirectory = _defaultOutputDirectory;
                 saveFileDialog.FileName = textBoxReference.Text;
                 saveFileDialog.Filter = isCtrlPressed ? "Documento PDF (*.pdf)|*.pdf" : "Documento Word (*.docx)|*.docx";
                 saveFileDialog.Title = "Salva il file";
                 if (saveFileDialog.ShowDialog() == DialogResult.OK)
                 {
                     outputPath = saveFileDialog.FileName;
+                    string? outputDirectory = Path.GetDirectoryName(outputPath);
+                    if (!String.IsNullOrEmpty(outputDirectory))
+                    {
+                        _defaultOutputDirectory = outputDirectory;
+                        Properties.Settings.Default.savedOutputDirectory = outputDirectory;
+                        Properties.Settings.Default.Save();
+                    }
                 }
                 else
                 {
@@ -234,7 +264,7 @@ namespace EvidenceMaster
             string header = String.Format("{0}\t\t{1}", comboBoxCI.Text, textBoxReference.Text);
             string footer = "Footer Test";
 
-            if (_contents.CreateDocx(outputPath, isCtrlPressed, header, footer))
+            if (await _contents.CreateDocx(outputPath, isCtrlPressed, header, footer))
             {
                 MessageBox.Show(String.Format("File salvato al percorso: {0}", outputPath), "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }

@@ -58,7 +58,7 @@
             Controls.Add(textBoxName);
             Controls.Add(pictureBoxPreview);
             Name = "FormInputContent";
-            Text = "FormInputContent";
+            Text = "Definizione Nuovo Contenuto";
             ((System.ComponentModel.ISupportInitialize)pictureBoxPreview).EndInit();
             ResumeLayout(false);
             PerformLayout();

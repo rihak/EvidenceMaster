@@ -25,7 +25,7 @@ namespace EvidenceMaster
             {
                 if (string.IsNullOrEmpty(this.ImageFilePath))
                 {
-                    MessageBox.Show("Percorso dell'immagine non trovato");
+                    MessageBox.Show("Percorso immagine non trovato");
                     ContentName = "";
                     this.Close();
                     return;
@@ -63,6 +63,7 @@ namespace EvidenceMaster
 
         public void setDefaultName(string name)
         {
+            this.Text = $"Definizione Contenuto \"{name}\"";
             textBoxName.Text = name;
             textBoxName.SelectAll();
             textBoxName.Focus();

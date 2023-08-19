@@ -50,8 +50,16 @@ namespace EvidenceMaster
 
     public class Contents
     {
+        const char serializationTitle = 'T';
+        const char serializationImage = 'I';
+        const char serializationContentSplit = '|';
+        const char serializationContentImageSplit = '?';
+
         private List<Content> _list;
+
         public Content this[int index] => _list[index];
+
+        public event EventHandler<int>? ProgressUpdated;
 
         public List<Content> List
         {
@@ -62,6 +70,48 @@ namespace EvidenceMaster
         public Contents()
         {
             _list = new List<Content>();
+        }
+
+        public Contents(string serial)
+        {
+            _list = new List<Content>();
+
+            string[] serialContents = serial.Split(serializationContentSplit);
+
+            foreach (string serialContent in serialContents)
+            {
+                if (!string.IsNullOrEmpty(serialContent))
+                {
+                    if (serialContent[0] == serializationTitle)
+                    {
+                        string serialTitle = serialContent[1..];
+                        this.AddTitle(serialTitle);
+                    }
+                    else if (serialContent[0] == serializationImage)
+                    {
+                        string serialImage = serialContent[1..];
+                        string[] seralImageProperties = serialImage.Split(serializationContentImageSplit);
+                        this.AddImage(seralImageProperties[0], seralImageProperties[1]);
+                    }
+                }
+            }
+        }
+
+        public string Serialize()
+        {
+            string serial = "";
+            foreach (var content in _list.OrderBy(content => _list.IndexOf(content)))
+            {
+                if (content.Type == Content.Types.Title)
+                {
+                    serial += $"{serializationTitle}{content.Name}{serializationContentSplit}";
+                }
+                else if ((content.Type == Content.Types.Image) && (!string.IsNullOrEmpty(content.FilePath)))
+                {
+                    serial += $"{serializationImage}{content.Name}{serializationContentImageSplit}{content.FilePath}{serializationContentSplit}";
+                }
+            }
+            return serial;
         }
 
 
@@ -133,73 +183,7 @@ namespace EvidenceMaster
             _list.Clear();
         }
 
-        public bool CreateDocx(string filePath, string? header = null, string? footer = null)
-        {
-            const int titlesFontSize = 24;
-            const int imagesMaxWidth = 400;
-            const int imagesMaxHeight = 400;
-            const int imagesBeforeBreak = 2;
-
-            var document = DocX.Create(filePath);
-
-            int sectionImageCount = 0;
-            bool firstElement = true;
-
-            foreach (var content in _list.OrderBy(content => _list.IndexOf(content)))
-            {
-                if (content.Type == Content.Types.Title)
-                {
-                    if (!firstElement)
-                    {
-                        document.InsertSectionPageBreak();
-                        sectionImageCount = 0;
-                    }
-                    document.InsertParagraph(content.Name).Heading(HeadingType.Heading1).FontSize(titlesFontSize).Alignment = Alignment.center;
-                    document.InsertParagraph();
-                }
-                else if ((content.Type == Content.Types.Image) && (!string.IsNullOrEmpty(content.FilePath)))
-                {
-                    if (sectionImageCount == imagesBeforeBreak)
-                    {
-                        document.InsertSectionPageBreak();
-                        sectionImageCount = 0;
-                    }
-                    sectionImageCount++;
-
-                    document.InsertParagraph(content.Name).Bold().Alignment = Alignment.left;
-                    var image = document.AddImage(content.FilePath);
-                    var picture = image.CreatePicture();
-
-                    float scaleFactor = Math.Min((float)imagesMaxWidth / picture.Width, (float)imagesMaxHeight / picture.Height);
-                    if (scaleFactor < 1)
-                    {
-                        picture.Width = (int)(picture.Width * scaleFactor);
-                        picture.Height = (int)(picture.Height * scaleFactor);
-                    }
-
-                    var paragraph = document.InsertParagraph();
-                    paragraph.Alignment = Alignment.center;
-                    paragraph.AppendPicture(picture);
-                    document.InsertParagraph();
-                }
-                firstElement = false;
-            }
-
-            document.AddHeaders();
-            document.AddFooters();
-
-            document.DifferentFirstPage = false;
-            document.DifferentOddAndEvenPages = false;
-
-            document.Headers.Odd.Paragraphs[0].Append(header);
-            document.Footers.Odd.Paragraphs[0].Append(footer);
-
-            document.SaveAs(filePath);
-
-            return File.Exists(filePath);
-        }
-
-        public bool CreateDocx(string filePath, bool saveAsPdf, string? header = null, string? footer = null)
+        public async Task<bool> CreateDocx(string filePath, bool saveAsPdf, string? header = null, string? footer = null)
         {
             const int titlesFontSize = 24;
             const int paragrahpsFontSize = 14;
@@ -209,24 +193,29 @@ namespace EvidenceMaster
 
             Microsoft.Office.Interop.Word.Application wordApp;
             Microsoft.Office.Interop.Word.Document wordDoc;
+            ProgressUpdated?.Invoke(this, 20);
             try
             {
                 wordApp = new Microsoft.Office.Interop.Word.Application();
                 wordDoc = wordApp.Documents.Add();
+                ProgressUpdated?.Invoke(this, 40);
 
                 PageSetup pageSetup = wordDoc.PageSetup;
                 pageSetup.TopMargin = wordApp.CentimetersToPoints(2);
                 pageSetup.BottomMargin = wordApp.CentimetersToPoints(2);
                 pageSetup.LeftMargin = wordApp.CentimetersToPoints(2);
                 pageSetup.RightMargin = wordApp.CentimetersToPoints(2);
+                ProgressUpdated?.Invoke(this, 60);
 
                 HeaderFooter headerFooter = wordDoc.Sections[1].Headers[WdHeaderFooterIndex.wdHeaderFooterPrimary];
                 Microsoft.Office.Interop.Word.Paragraph headerParagraph = headerFooter.Range.Paragraphs.Add();
                 headerParagraph.Range.Text = header;
                 headerParagraph.Format.Alignment = WdParagraphAlignment.wdAlignParagraphCenter;
+                ProgressUpdated?.Invoke(this, 80);
 
                 headerFooter = wordDoc.Sections[1].Footers[WdHeaderFooterIndex.wdHeaderFooterPrimary];
                 headerFooter.PageNumbers.Add(0);
+                ProgressUpdated?.Invoke(this, 100);
 
                 int sectionImageCount = 0;
                 bool firstElement = true;
@@ -243,6 +232,7 @@ namespace EvidenceMaster
 
                         Microsoft.Office.Interop.Word.Paragraph titleParagraph = wordDoc.Paragraphs.Add();
                         titleParagraph.Range.Text = content.Name;
+                        titleParagraph.Range.Font.Bold = 1;
                         titleParagraph.Range.Font.Size = titlesFontSize;
                         titleParagraph.Range.ParagraphFormat.Alignment = WdParagraphAlignment.wdAlignParagraphCenter;
                         titleParagraph.Range.InsertParagraphAfter();
@@ -279,9 +269,16 @@ namespace EvidenceMaster
                         inlineShape.Width = newWidth;
                         inlineShape.Height = newHeight;
 
-                        imageParagraph.Range.InsertParagraphAfter();
+                        if (sectionImageCount != imagesBeforeBreak)
+                        {
+                            imageParagraph.Range.InsertParagraphAfter();
+                        }
                     }
                     firstElement = false;
+
+                    float progressPercentage = (float)(_list.IndexOf(content) + 1) / _list.Count * 100;
+                    ProgressUpdated?.Invoke(this, (int)progressPercentage);
+                    await System.Threading.Tasks.Task.Delay(1);
                 }
 
                 wordDoc.SaveAs2(filePath, saveAsPdf ? WdSaveFormat.wdFormatPDF : WdSaveFormat.wdFormatDocumentDefault);
@@ -289,10 +286,13 @@ namespace EvidenceMaster
                 wordDoc?.Close(WdSaveOptions.wdDoNotSaveChanges);
                 wordApp?.Quit();
 
+                ProgressUpdated?.Invoke(this, 0);
+
                 return File.Exists(filePath);
             }
             catch (Exception ex)
             {
+                ProgressUpdated?.Invoke(this, 0);
                 Console.WriteLine("Si è verificato un errore durante la creazione del documento Word: " + ex.Message);
                 return false;
             }
