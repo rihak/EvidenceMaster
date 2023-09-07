@@ -83,6 +83,5 @@ namespace EvidenceMaster
                 this.Close();
             }
         }
-
     }
 }

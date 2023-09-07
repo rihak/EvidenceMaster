@@ -191,28 +191,24 @@ namespace EvidenceMaster
 
             Microsoft.Office.Interop.Word.Application wordApp;
             Microsoft.Office.Interop.Word.Document wordDoc;
-            ProgressUpdated?.Invoke(this, 20);
+            ProgressUpdated?.Invoke(this, 25);
             try
             {
                 wordApp = new Microsoft.Office.Interop.Word.Application();
                 wordDoc = wordApp.Documents.Add();
-                ProgressUpdated?.Invoke(this, 40);
+                ProgressUpdated?.Invoke(this, 50);
 
                 PageSetup pageSetup = wordDoc.PageSetup;
                 pageSetup.TopMargin = wordApp.CentimetersToPoints(2);
                 pageSetup.BottomMargin = wordApp.CentimetersToPoints(2);
                 pageSetup.LeftMargin = wordApp.CentimetersToPoints(2);
                 pageSetup.RightMargin = wordApp.CentimetersToPoints(2);
-                ProgressUpdated?.Invoke(this, 60);
+                ProgressUpdated?.Invoke(this, 75);
 
                 HeaderFooter headerFooter = wordDoc.Sections[1].Headers[WdHeaderFooterIndex.wdHeaderFooterPrimary];
                 Microsoft.Office.Interop.Word.Paragraph headerParagraph = headerFooter.Range.Paragraphs.Add();
                 headerParagraph.Range.Text = header;
                 headerParagraph.Format.Alignment = WdParagraphAlignment.wdAlignParagraphCenter;
-                ProgressUpdated?.Invoke(this, 80);
-
-                headerFooter = wordDoc.Sections[1].Footers[WdHeaderFooterIndex.wdHeaderFooterPrimary];
-                headerFooter.PageNumbers.Add(0);
                 ProgressUpdated?.Invoke(this, 100);
 
                 int sectionImageCount = 0;
@@ -278,6 +274,24 @@ namespace EvidenceMaster
                     ProgressUpdated?.Invoke(this, (int)progressPercentage);
                     await System.Threading.Tasks.Task.Delay(1);
                 }
+                
+
+                Object oMissing = System.Reflection.Missing.Value;
+                Microsoft.Office.Interop.Word.Selection selection = wordApp.Selection;
+
+                wordDoc.ActiveWindow.ActivePane.View.SeekView = Microsoft.Office.Interop.Word.WdSeekView.wdSeekCurrentPageFooter;
+                selection.ParagraphFormat.Alignment = Microsoft.Office.Interop.Word.WdParagraphAlignment.wdAlignParagraphRight;
+
+                //wordDoc.ActiveWindow.Selection.TypeText("Pag ");
+                object CurrentPage = Microsoft.Office.Interop.Word.WdFieldType.wdFieldPage;
+                wordDoc.ActiveWindow.Selection.Fields.Add(selection.Range, ref CurrentPage, ref oMissing, ref oMissing);
+
+                wordDoc.ActiveWindow.Selection.TypeText(" di ");
+                object TotalPages = Microsoft.Office.Interop.Word.WdFieldType.wdFieldNumPages;
+                wordDoc.ActiveWindow.Selection.Fields.Add(selection.Range, ref TotalPages, ref oMissing, ref oMissing);
+
+                wordDoc.ActiveWindow.ActivePane.View.SeekView = Microsoft.Office.Interop.Word.WdSeekView.wdSeekMainDocument;
+
 
                 wordDoc.SaveAs2(filePath, saveAsPdf ? WdSaveFormat.wdFormatPDF : WdSaveFormat.wdFormatDocumentDefault);
 
