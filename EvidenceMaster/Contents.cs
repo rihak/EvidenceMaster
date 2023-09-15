@@ -191,25 +191,25 @@ namespace EvidenceMaster
 
             Microsoft.Office.Interop.Word.Application wordApp;
             Microsoft.Office.Interop.Word.Document wordDoc;
-            ProgressUpdated?.Invoke(this, 25);
+            ProgressUpdated?.Invoke(this, 10);
             try
             {
                 wordApp = new Microsoft.Office.Interop.Word.Application();
                 wordDoc = wordApp.Documents.Add();
-                ProgressUpdated?.Invoke(this, 50);
+                ProgressUpdated?.Invoke(this, 20);
 
                 PageSetup pageSetup = wordDoc.PageSetup;
                 pageSetup.TopMargin = wordApp.CentimetersToPoints(2);
                 pageSetup.BottomMargin = wordApp.CentimetersToPoints(2);
                 pageSetup.LeftMargin = wordApp.CentimetersToPoints(2);
                 pageSetup.RightMargin = wordApp.CentimetersToPoints(2);
-                ProgressUpdated?.Invoke(this, 75);
+                ProgressUpdated?.Invoke(this, 30);
 
                 HeaderFooter headerFooter = wordDoc.Sections[1].Headers[WdHeaderFooterIndex.wdHeaderFooterPrimary];
                 Microsoft.Office.Interop.Word.Paragraph headerParagraph = headerFooter.Range.Paragraphs.Add();
                 headerParagraph.Range.Text = header;
                 headerParagraph.Format.Alignment = WdParagraphAlignment.wdAlignParagraphCenter;
-                ProgressUpdated?.Invoke(this, 100);
+                ProgressUpdated?.Invoke(this, 40);
 
                 int sectionImageCount = 0;
                 bool firstElement = true;
@@ -270,7 +270,7 @@ namespace EvidenceMaster
                     }
                     firstElement = false;
 
-                    float progressPercentage = (float)(_list.IndexOf(content) + 1) / _list.Count * 100;
+                    float progressPercentage = (float)(_list.IndexOf(content) + 1) / _list.Count * 60 + 40;
                     ProgressUpdated?.Invoke(this, (int)progressPercentage);
                     await System.Threading.Tasks.Task.Delay(1);
                 }

@@ -1,5 +1,6 @@
 using System.Drawing.Imaging;
 using System.Collections.Specialized;
+using System.Diagnostics;
 
 namespace EvidenceMaster
 {
@@ -231,11 +232,11 @@ namespace EvidenceMaster
 
             if (comboBoxCI.Text == "" || textBoxReference.Text == "" || listViewContents.Items.Count == 0)
             {
-                MessageBox.Show("Impossibile proseguire. I campi CI, Reference e Lista dei contenuti non possono essere vuoti.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Impossibile proseguire. I campi CI, Reference e Lista dei contenuti non possono essere vuoti.", "Attenzione", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            string outputPath = Path.Combine(_defaultOutputDirectory, String.Format("{0}_{1:yyyyMMddHHmmss}.{2}", textBoxReference.Text, DateTime.Now, isCtrlPressed ? "pdf" : "docx"));
+            string outputPath = Path.Combine(_defaultOutputDirectory, String.Format("{0}.{1}", textBoxReference.Text, isCtrlPressed ? "pdf" : "docx"));
 
             if (isShiftPressed)
             {
@@ -259,6 +260,20 @@ namespace EvidenceMaster
                 {
                     return;
                 }
+            } else
+            {
+                if (File.Exists(outputPath))
+                {
+                    if (MessageBox.Show("Il file è già esistente. Vuoi sostituirlo?", "Sostituzione", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
+                    {
+                        File.Delete(outputPath);
+                    }
+                    else
+                    {
+                        MessageBox.Show("Creazione del file interrotta.", "Interruzione", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return;
+                    }
+                }
             }
 
             string header = String.Format("{0}\t\t{1}", comboBoxCI.Text, textBoxReference.Text);
@@ -266,7 +281,12 @@ namespace EvidenceMaster
 
             if (await _contents.CreateDocx(outputPath, isCtrlPressed, header, footer))
             {
-                MessageBox.Show(String.Format("File salvato al percorso: {0}", outputPath), "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                DialogResult confirmResult = MessageBox.Show(String.Format("File salvato al seguente percorso:\n\n{0}\n\nAprire la cartella di destinazione?", outputPath), "Conferma", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+                if (confirmResult == DialogResult.Yes)
+                {
+                    Process.Start("explorer.exe", "/select, \"" + outputPath + "\"");
+                }
             }
             else
             {
