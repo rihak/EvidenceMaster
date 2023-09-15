@@ -260,7 +260,8 @@ namespace EvidenceMaster
                 {
                     return;
                 }
-            } else
+            }
+            else
             {
                 if (File.Exists(outputPath))
                 {
