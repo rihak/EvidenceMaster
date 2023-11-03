@@ -38,13 +38,14 @@
             // comboBoxCI
             // 
             comboBoxCI.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            comboBoxCI.AutoCompleteMode = AutoCompleteMode.Suggest;
             comboBoxCI.AutoCompleteSource = AutoCompleteSource.ListItems;
             comboBoxCI.FormattingEnabled = true;
             comboBoxCI.Location = new Point(12, 12);
             comboBoxCI.Name = "comboBoxCI";
             comboBoxCI.Size = new Size(330, 23);
             comboBoxCI.TabIndex = 2;
+            comboBoxCI.TextUpdate += comboBoxCI_TextUpdate;
+            comboBoxCI.KeyPress += comboBoxCI_KeyPress;
             // 
             // textBoxReference
             // 
@@ -126,7 +127,7 @@
             Controls.Add(comboBoxCI);
             MinimumSize = new Size(370, 425);
             Name = "FormHome";
-            Text = "EvidenceMaster Beta v0.2.6";
+            Text = "EvidenceMaster Beta v0.2.7";
             FormClosed += FormHome_FormClosed;
             ResumeLayout(false);
             PerformLayout();

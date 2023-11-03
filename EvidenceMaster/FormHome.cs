@@ -8,6 +8,7 @@ namespace EvidenceMaster
     {
         private Contents _contents;
         private string _defaultOutputDirectory;
+        private string[]? _configurationItems;
 
         public FormHome()
         {
@@ -19,9 +20,9 @@ namespace EvidenceMaster
             string ciFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ci.txt");
             if (File.Exists(ciFilePath))
             {
-                string[] ci = File.ReadAllLines(ciFilePath);
-                Array.Sort(ci);
-                comboBoxCI.Items.AddRange(ci);
+                _configurationItems = File.ReadAllLines(ciFilePath);
+                Array.Sort(_configurationItems);
+                comboBoxCI.Items.AddRange(_configurationItems);
             }
 
             string savedOutputDirectory = Properties.Settings.Default.savedOutputDirectory;
@@ -50,6 +51,46 @@ namespace EvidenceMaster
             Properties.Settings.Default.lastReference = this.textBoxReference.Text;
             Properties.Settings.Default.lastContents = _contents.Serialize();
             Properties.Settings.Default.Save();
+        }
+
+        private void comboBoxCI_TextUpdate(object sender, EventArgs e)
+        {
+            if (_configurationItems == null)
+            {
+                return;
+            }
+            if (comboBoxCI.Text == "")
+            {
+                comboBoxCI.Items.Clear();
+                comboBoxCI.Items.AddRange(_configurationItems);
+                comboBoxCI.SelectedIndex = -1;
+            }
+            else
+            {
+                string tempStr = comboBoxCI.Text;
+                string[] ciFiltered = _configurationItems.Where(s => s.ToLower().Contains(tempStr.ToLower())).ToArray();
+
+                comboBoxCI.Items.Clear();
+
+                comboBoxCI.Items.AddRange(ciFiltered);
+                comboBoxCI.DroppedDown = true;
+                Cursor.Current = Cursors.Default;
+                comboBoxCI.SelectedIndex = -1;
+
+                comboBoxCI.Text = tempStr;
+                comboBoxCI.Select(comboBoxCI.Text.Length, 0);
+            }
+        }
+
+        private void comboBoxCI_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (e.KeyChar != '\r') return;
+
+            if (this.ActiveControl != null)
+            {
+                this.SelectNextControl(this.ActiveControl, true, true, true, true);
+            }
+            e.Handled = true;
         }
 
         private void listViewContents_Update()
@@ -90,7 +131,7 @@ namespace EvidenceMaster
                         string filePath = fileDropList[0] ?? "";
                         string extension = Path.GetExtension(filePath);
 
-                        List<string> supportedExtensions = new List<string> { ".png" };
+                        List<string> supportedExtensions = new List<string> { ".png", ".jpg", ".jpeg" };
 
                         if (supportedExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase) && !string.IsNullOrEmpty(filePath) && File.Exists(filePath))
                         {
@@ -197,7 +238,7 @@ namespace EvidenceMaster
             string file = files[0];
 
             string extension = Path.GetExtension(file);
-            string[] supportedExtensions = { ".png" };
+            string[] supportedExtensions = { ".png", ".jpg", ".jpeg" };
 
             if (supportedExtensions.Contains(extension.ToLower()))
             {
