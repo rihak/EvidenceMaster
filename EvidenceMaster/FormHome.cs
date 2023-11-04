@@ -118,7 +118,7 @@ namespace EvidenceMaster
                     using var formInputContent = new FormInputContent(Content.Types.Image, imageFilePath);
                     if (formInputContent.ShowDialog() == DialogResult.OK)
                     {
-                        _contents.AddImage(formInputContent.ContentName, imageFilePath);
+                        _contents.AddImage(formInputContent.ContentName, formInputContent.ImageFilePath ?? imageFilePath);
                         listViewContents_Update();
                     }
                 }
@@ -141,7 +141,7 @@ namespace EvidenceMaster
                             using var formInputContent = new FormInputContent(Content.Types.Image, tempFilePath);
                             if (formInputContent.ShowDialog() == DialogResult.OK)
                             {
-                                _contents.AddImage(formInputContent.ContentName, tempFilePath);
+                                _contents.AddImage(formInputContent.ContentName, formInputContent.ImageFilePath ?? tempFilePath);
                                 listViewContents_Update();
                             }
                         }
@@ -182,6 +182,7 @@ namespace EvidenceMaster
                     if (formInputContent.ShowDialog() == DialogResult.OK)
                     {
                         _contents[selectedIndex].Name = formInputContent.ContentName;
+                        _contents[selectedIndex].FilePath = formInputContent.ImageFilePath;
                         listViewContents_Update();
                     }
                 }
@@ -248,7 +249,7 @@ namespace EvidenceMaster
                 using var formInputContent = new FormInputContent(Content.Types.Image, tempFilePath);
                 if (formInputContent.ShowDialog() == DialogResult.OK)
                 {
-                    _contents.AddImage(formInputContent.ContentName, tempFilePath);
+                    _contents.AddImage(formInputContent.ContentName, formInputContent.ImageFilePath ?? tempFilePath);
                     listViewContents_Update();
                 }
             }

@@ -127,7 +127,7 @@
             Controls.Add(comboBoxCI);
             MinimumSize = new Size(370, 425);
             Name = "FormHome";
-            Text = "EvidenceMaster Beta v0.2.7";
+            Text = "EvidenceMaster Beta v0.2.8";
             FormClosed += FormHome_FormClosed;
             ResumeLayout(false);
             PerformLayout();

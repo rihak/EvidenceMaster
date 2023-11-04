@@ -35,11 +35,16 @@
             // 
             // pictureBoxPreview
             // 
+            pictureBoxPreview.Cursor = Cursors.Cross;
             pictureBoxPreview.Location = new Point(12, 41);
             pictureBoxPreview.Name = "pictureBoxPreview";
             pictureBoxPreview.Size = new Size(1440, 810);
             pictureBoxPreview.TabIndex = 0;
             pictureBoxPreview.TabStop = false;
+            pictureBoxPreview.DoubleClick += pictureBoxPreview_DoubleClick;
+            pictureBoxPreview.MouseDown += pictureBoxPreview_MouseDown;
+            pictureBoxPreview.MouseMove += pictureBoxPreview_MouseMove;
+            pictureBoxPreview.MouseUp += pictureBoxPreview_MouseUp;
             // 
             // textBoxName
             // 
