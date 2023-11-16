@@ -126,25 +126,43 @@ namespace EvidenceMaster
                 else if (Clipboard.ContainsFileDropList())
                 {
                     StringCollection fileDropList = Clipboard.GetFileDropList();
-                    if (fileDropList != null && fileDropList.Count == 1)
+
+
+                    if (fileDropList != null)
                     {
-                        string filePath = fileDropList[0] ?? "";
-                        string extension = Path.GetExtension(filePath);
+                        string[] files = new string[fileDropList.Count];
+                        fileDropList.CopyTo(files, 0);
 
-                        List<string> supportedExtensions = new List<string> { ".png", ".jpg", ".jpeg" };
-
-                        if (supportedExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase) && !string.IsNullOrEmpty(filePath) && File.Exists(filePath))
+                        Array.Sort(files, (f1, f2) =>
                         {
-                            string tempFilePath = tempRandomPngPath();
-                            File.Copy(filePath, tempFilePath, true);
+                            DateTime f1CreationTime = File.GetCreationTime(f1);
+                            DateTime f2CreationTime = File.GetCreationTime(f2);
+                            return f1CreationTime.CompareTo(f2CreationTime);
+                        });
 
-                            using var formInputContent = new FormInputContent(Content.Types.Image, tempFilePath);
-                            if (formInputContent.ShowDialog() == DialogResult.OK)
+                        foreach (string filePath in files)
+                        {
+                            if (filePath == null)
                             {
-                                _contents.AddImage(formInputContent.ContentName, formInputContent.ImageFilePath ?? tempFilePath);
-                                listViewContents_Update();
+                                continue;
+                            }
+                            string extension = Path.GetExtension(filePath);
+
+                            List<string> supportedExtensions = new List<string> { ".png", ".jpg", ".jpeg" };
+
+                            if (supportedExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase) && !string.IsNullOrEmpty(filePath) && File.Exists(filePath))
+                            {
+                                string tempFilePath = tempRandomPngPath();
+                                File.Copy(filePath, tempFilePath, true);
+
+                                using var formInputContent = new FormInputContent(Content.Types.Image, tempFilePath);
+                                if (formInputContent.ShowDialog() == DialogResult.OK)
+                                {
+                                    _contents.AddImage(formInputContent.ContentName, formInputContent.ImageFilePath ?? tempFilePath);
+                                }
                             }
                         }
+                        listViewContents_Update();
                     }
                 }
             }
@@ -173,7 +191,7 @@ namespace EvidenceMaster
                 }
             }
             // R|V - Rinomina o Visualizza Contenuto
-            else if (e.KeyCode == Keys.R || e.KeyCode == Keys.V)
+            else if (e.KeyCode == Keys.R || e.KeyCode == Keys.V || e.KeyCode == Keys.Enter)
             {
                 if (selectedIndex >= 0)
                 {
@@ -214,6 +232,22 @@ namespace EvidenceMaster
             }
         }
 
+        private void listViewContents_DoubleClick(object sender, EventArgs e)
+        {
+            int selectedIndex = listViewContents.SelectedIndices.Count > 0 ? listViewContents.SelectedIndices[0] : -1;
+            if (selectedIndex >= 0)
+            {
+                using var formInputContent = new FormInputContent(_contents[selectedIndex].Type, _contents[selectedIndex].FilePath);
+                formInputContent.setDefaultName(_contents[selectedIndex].Name);
+                if (formInputContent.ShowDialog() == DialogResult.OK)
+                {
+                    _contents[selectedIndex].Name = formInputContent.ContentName;
+                    _contents[selectedIndex].FilePath = formInputContent.ImageFilePath;
+                    listViewContents_Update();
+                }
+            }
+        }
+
         private void listViewContents_DragEnter(object sender, DragEventArgs e)
         {
             if (e.Data != null && e.Data.GetDataPresent(DataFormats.FileDrop))
@@ -231,28 +265,31 @@ namespace EvidenceMaster
 
             string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
 
-            if (files.Length != 1)
+            Array.Sort(files, (f1, f2) =>
             {
-                return;
-            }
+                DateTime f1CreationTime = File.GetCreationTime(f1);
+                DateTime f2CreationTime = File.GetCreationTime(f2);
+                return f1CreationTime.CompareTo(f2CreationTime);
+            });
 
-            string file = files[0];
-
-            string extension = Path.GetExtension(file);
-            string[] supportedExtensions = { ".png", ".jpg", ".jpeg" };
-
-            if (supportedExtensions.Contains(extension.ToLower()))
+            foreach (string file in files)
             {
-                string tempFilePath = tempRandomPngPath();
-                File.Copy(file, tempFilePath, true);
+                string extension = Path.GetExtension(file);
+                string[] supportedExtensions = { ".png", ".jpg", ".jpeg" };
 
-                using var formInputContent = new FormInputContent(Content.Types.Image, tempFilePath);
-                if (formInputContent.ShowDialog() == DialogResult.OK)
+                if (supportedExtensions.Contains(extension.ToLower()))
                 {
-                    _contents.AddImage(formInputContent.ContentName, formInputContent.ImageFilePath ?? tempFilePath);
-                    listViewContents_Update();
+                    string tempFilePath = tempRandomPngPath();
+                    File.Copy(file, tempFilePath, true);
+
+                    using var formInputContent = new FormInputContent(Content.Types.Image, tempFilePath);
+                    if (formInputContent.ShowDialog() == DialogResult.OK)
+                    {
+                        _contents.AddImage(formInputContent.ContentName, formInputContent.ImageFilePath ?? tempFilePath);
+                    }
                 }
             }
+            listViewContents_Update();
         }
 
         private void onProgressUpdated(object? sender, int progressPercentage)
@@ -375,7 +412,7 @@ Comandi Lista Contenuti:
     - TRASCINA - AGGIUNGI - Trascina un File Immagine PNG
     - T - AGGIUNGI - Aggiungi un Titolo
     - CTRL+C - RECUPERA - Copia il Nome del Contenuto
-    - R/V - AGGIORNA - Rinomina o Visualizza il Contenuto Selezionato
+    - R/V/INVIO/Doppio Click - AGGIORNA - Rinomina o Visualizza il Contenuto Selezionato
     - CTRL+UP - AGGIORNA - Sposta Sopra il Contenuto Selezionato
     - CTRL+DOWN - AGGIORNA - Sposta Sotto il Contenuto Selezionato
     - DEL - ELIMINA  - Elimina il Contenuto Selezionato

@@ -68,6 +68,7 @@
             listViewContents.View = View.List;
             listViewContents.DragDrop += listViewContents_DragDrop;
             listViewContents.DragEnter += listViewContents_DragEnter;
+            listViewContents.DoubleClick += listViewContents_DoubleClick;
             listViewContents.KeyDown += listViewContents_KeyDown;
             // 
             // buttonGo
@@ -127,7 +128,7 @@
             Controls.Add(comboBoxCI);
             MinimumSize = new Size(370, 425);
             Name = "FormHome";
-            Text = "EvidenceMaster Beta v0.2.8";
+            Text = "EvidenceMaster Beta v0.2.9";
             FormClosed += FormHome_FormClosed;
             ResumeLayout(false);
             PerformLayout();
