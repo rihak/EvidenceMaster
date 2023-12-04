@@ -297,10 +297,12 @@ namespace EvidenceMaster
             if (InvokeRequired)
             {
                 Invoke(new Action(() => progressBarCreation.Value = progressPercentage));
+                Invoke(new Action(() => buttonReset.Enabled = buttonGo.Enabled = progressPercentage == 0));
             }
             else
             {
                 progressBarCreation.Value = progressPercentage;
+                buttonReset.Enabled = buttonGo.Enabled = progressPercentage == 0;
             }
         }
 
