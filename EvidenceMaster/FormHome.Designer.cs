@@ -26,6 +26,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FormHome));
             comboBoxCI = new ComboBox();
             textBoxReference = new TextBox();
             listViewContents = new ListView();
@@ -126,9 +127,10 @@
             Controls.Add(listViewContents);
             Controls.Add(textBoxReference);
             Controls.Add(comboBoxCI);
+            Icon = (Icon)resources.GetObject("$this.Icon");
             MinimumSize = new Size(370, 425);
             Name = "FormHome";
-            Text = "EvidenceMaster Beta v0.2.10";
+            Text = "EvidenceMaster Beta v0.2.11";
             FormClosed += FormHome_FormClosed;
             ResumeLayout(false);
             PerformLayout();
