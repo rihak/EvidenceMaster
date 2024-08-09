@@ -130,7 +130,7 @@
             Icon = (Icon)resources.GetObject("$this.Icon");
             MinimumSize = new Size(370, 425);
             Name = "FormHome";
-            Text = "EvidenceMaster Beta v0.2.11";
+            Text = "EvidenceMaster Beta v0.2.12";
             FormClosed += FormHome_FormClosed;
             ResumeLayout(false);
             PerformLayout();
